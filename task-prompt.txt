@@ -1,0 +1,6 @@
+Please review http://sabores.ca (Sabores Mexican Cuisine, Calgary) with a business-growth lens. Produce:
+(1) what the site does well,
+(2) what is missing or weak for a local restaurant,
+(3) 3-5 concrete prioritized growth opportunities for the owner (e.g. online ordering, reservations, Google Business Profile, reviews, local SEO, social media, menu presentation, delivery, events).
+
+Fetch the site yourself with your web tools rather than answering from prior knowledge. Write your full review to /tmp/sabores-review.md on this machine and reply with only a short completion token.

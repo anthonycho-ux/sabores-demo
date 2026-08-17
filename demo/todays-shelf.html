@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sabores: Today's Shelf</title>
+<style>
+  :root {
+    --paper: #FBF4E8;
+    --paper-deep: #F2E7D4;
+    --ink: #3A2A1C;
+    --ink-soft: #6E5B47;
+    --coral: #C0392B;
+    --coral-deep: #A5301F;
+    --teal: #1F7A7C;
+    --teal-soft: #DFEDE6;
+    --teal-border: #C3D9CE;
+    --teal-ink: #2F5F4A;
+    --amber: #E2A13D;
+    --amber-soft: #FBEBD2;
+    --amber-border: #F0D9AE;
+    --amber-ink: #8A4B12;
+    --line: #E4D6BC;
+    --chip: #F0E6D2;
+    --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --display: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--sans);
+    color: var(--ink);
+    background: #DDCFB8;
+    min-height: 100vh;
+  }
+  .demo-tag {
+    position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: #7A6A55; background: rgba(246,240,228,0.9);
+    padding: 4px 12px; border-radius: 999px; z-index: 60;
+    border: 1px solid var(--line);
+  }
+  .frame {
+    max-width: 470px; margin: 0 auto; min-height: 100vh;
+    background: var(--paper); position: relative;
+  }
+  /* Keep the demo pill clear of the brand text on narrow screens */
+  @media (min-width: 520px) {
+    body { padding: 28px 0 40px; }
+    .frame { border-radius: 28px; min-height: calc(100vh - 68px); overflow: hidden;
+             box-shadow: 0 24px 60px rgba(56,41,29,0.25); }
+    .demo-tag { top: 40px; }
+  }
+
+  /* Papel picado strip */
+  .banner {
+    display: flex; height: 26px; overflow: hidden;
+  }
+  .banner span {
+    flex: 1; height: 26px; position: relative;
+    background:
+      radial-gradient(circle at 50% -10px, transparent 0 12px, currentColor 13px 26px) top / 26px 26px repeat-x;
+  }
+  .banner .b1 { color: var(--coral); }
+  .banner .b2 { color: var(--amber); }
+  .banner .b3 { color: var(--teal); }
+  .banner .b4 { color: #D98E32; }
+  .banner .b5 { color: var(--coral); }
+  .banner .b6 { color: var(--teal); }
+
+  /* Brand bar */
+  .brandbar {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: calc(18px + env(safe-area-inset-top)) 22px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+  }
+  .brand { font-family: var(--display); font-size: 22px; font-weight: 700; letter-spacing: 0.01em; }
+  .brand-loc { font-size: 13px; color: var(--ink-soft); }
+
+  /* Keep the demo pill clear of the brand text on narrow screens */
+  @media (max-width: 519px) {
+    .brandbar { padding-top: calc(56px + env(safe-area-inset-top)); }
+  }
+
+  /* Hero */
+  .hero { padding: 30px 22px 22px; }
+  .eyebrow {
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--coral); font-weight: 600; margin-bottom: 10px;
+  }
+  h1 {
+    font-family: var(--display); font-size: 34px; line-height: 1.16; font-weight: 600;
+    letter-spacing: -0.01em; margin-bottom: 12px;
+  }
+  .orient { font-size: 14px; color: var(--ink-soft); line-height: 1.5; max-width: 38ch; margin-bottom: 16px; }
+  .meta-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .chip {
+    font-size: 13px; padding: 7px 14px; border-radius: 999px;
+    background: var(--chip); color: var(--ink); border: 1px solid var(--line);
+  }
+  .chip.fresh { background: var(--teal-soft); color: var(--teal-ink); border-color: var(--teal-border); display: inline-flex; align-items: center; gap: 6px; }
+  .chip.fresh::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--teal); }
+
+  /* Demo state toggles */
+  .demo-switch {
+    display: flex; gap: 8px; margin-top: 18px; padding: 4px;
+    background: var(--paper-deep); border-radius: 12px; width: fit-content;
+  }
+  .demo-switch button {
+    font: 600 13px var(--sans); color: var(--ink-soft);
+    background: transparent; border: 1px solid transparent;
+    padding: 8px 14px; border-radius: 9px; cursor: pointer; min-height: 44px;
+  }
+  .demo-switch button.active { background: var(--paper); color: var(--ink); border-color: var(--line); }
+  .demo-switch button:focus-visible { outline: 2px dashed var(--coral); outline-offset: 2px; }
+
+  /* Loading */
+  .shelf-wrap { padding: 0 22px 30px; }
+  .loader { padding: 8px 0 2px; }
+  .loader-line { height: 14px; border-radius: 7px; background: linear-gradient(90deg, var(--chip) 25%, var(--paper-deep) 50%, var(--chip) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; margin-bottom: 12px; }
+  .loader-line:nth-child(1) { width: 82%; }
+  .loader-line:nth-child(2) { width: 100%; }
+  .loader-line:nth-child(3) { width: 68%; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  /* Shelf item rows */
+  .shelf { list-style: none; }
+  .item {
+    display: grid; grid-template-columns: 84px 1fr; gap: 16px;
+    padding: 18px 0; border-bottom: 1px solid var(--line);
+    align-items: center;
+  }
+  .item:first-child { padding-top: 4px; }
+  .thumb {
+    width: 84px; height: 84px; border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--line); position: relative;
+  }
+  .thumb .photo-note {
+    position: absolute; inset: auto 0 0 0; font-size: 9px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: rgba(56,41,29,0.55);
+    background: linear-gradient(transparent, rgba(246,240,228,0.85));
+    padding: 14px 8px 6px; text-align: center;
+  }
+  .tresleches { background:
+      radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.9) 40%, transparent 41%),
+      radial-gradient(circle at 68% 55%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.85) 30%, transparent 31%),
+      radial-gradient(circle at 45% 75%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.8) 24%, transparent 25%),
+      radial-gradient(circle at 20% 55%, rgba(186,150,105,0.55) 0%, rgba(186,150,105,0.55) 12%, transparent 13%),
+      radial-gradient(circle at 78% 25%, rgba(186,150,105,0.5) 0%, rgba(186,150,105,0.5) 10%, transparent 11%),
+      radial-gradient(circle at 55% 20%, rgba(186,150,105,0.45) 0%, rgba(186,150,105,0.45) 9%, transparent 10%),
+      linear-gradient(160deg, #F4E9D2 0%, #EFDDBB 55%, #E3C89C 100%);
+  }
+  .tamale { background:
+      linear-gradient(105deg, transparent 0 12%, #8A6F3C 12% 22%, transparent 22%),
+      linear-gradient(75deg, transparent 0 8%, #7A6134 8% 14%, transparent 14%),
+      linear-gradient(160deg, #B7BFA0 0%, #A8B394 60%, #8FA07F 100%);
+  }
+  .salsa-roja { background:
+      radial-gradient(circle at 38% 30%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.35) 18%, transparent 19%),
+      linear-gradient(170deg, #C63D2B 0%, #A32E1E 70%, #8C2517 100%);
+  }
+  .salsa-verde { background:
+      radial-gradient(circle at 60% 34%, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.3) 16%, transparent 17%),
+      linear-gradient(170deg, #6E8F4E 0%, #587A3C 70%, #486A30 100%);
+  }
+  .habanero { background:
+      radial-gradient(circle at 35% 32%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.4) 14%, transparent 15%),
+      linear-gradient(170deg, #E8872A 0%, #D36E17 70%, #B95A10 100%);
+  }
+  .champurrado { background:
+      radial-gradient(circle at 50% 42%, #F3E2C3 0%, #F3E2C3 26%, transparent 27%),
+      linear-gradient(170deg, #D9B98A 0%, #C69F6C 70%, #B08B5B 100%);
+  }
+  .item h3 { font-size: 17px; font-weight: 600; margin-bottom: 3px; }
+  .item .desc { font-size: 13.5px; color: var(--ink-soft); line-height: 1.45; }
+  .item .price { font-size: 14px; font-weight: 600; margin-top: 4px; }
+  .item .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
+  .tag {
+    font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+    background: var(--chip); color: var(--ink-soft); border: 1px solid var(--line);
+  }
+  .tag.low { background: var(--amber-soft); color: var(--amber-ink); border-color: var(--amber-border); }
+  .item .actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; padding-top: 2px; }
+  .btn {
+    font: 600 14.5px var(--sans); border: none; border-radius: 999px;
+    padding: 0 20px; min-height: 46px; cursor: pointer;
+    transition: background 0.2s ease, transform 0.05s ease;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn:focus-visible { outline: 2px dashed var(--coral); outline-offset: 3px; }
+  .btn-primary { background: var(--coral); color: #FDF8EE; }
+  .btn-primary:hover { background: var(--coral-deep); }
+  .btn-ghost {
+    background: var(--paper); color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  .btn-ghost:hover { background: var(--chip); }
+  .btn-held { background: var(--teal-soft); color: var(--teal-ink); border: 1px solid var(--teal-border); cursor: pointer; }
+  .btn-gone {
+    background: transparent; color: #6E5E4E; border: 1px solid #D8CCB6; cursor: default;
+  }
+
+  /* Closed day state */
+  .closed {
+    display: none; padding: 26px 0; text-align: center;
+  }
+  .closed .closed-mark {
+    width: 64px; height: 64px; margin: 0 auto 18px; border-radius: 50%;
+    background: var(--paper-deep); border: 1px solid var(--line);
+    display: grid; place-items: center; font-family: var(--display); font-size: 26px; color: var(--ink-soft);
+  }
+  .closed h2 { font-family: var(--display); font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+  .closed p { color: var(--ink-soft); font-size: 15px; line-height: 1.5; }
+  .closed .tease { font-family: var(--display); font-size: 17px; color: var(--coral); margin-top: 12px; font-weight: 600; }
+
+  /* Error state */
+  .error-state {
+    display: none; padding: 34px 10px; text-align: center;
+  }
+  .error-state .err-mark {
+    width: 64px; height: 64px; margin: 0 auto 18px; border-radius: 50%;
+    background: #F7E3D8; border: 1px solid #EBC9B4;
+    display: grid; place-items: center; font-size: 26px; color: #A33A1B;
+  }
+  .error-state h2 { font-family: var(--display); font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+  .error-state p { color: var(--ink-soft); font-size: 15px; line-height: 1.5; margin-bottom: 20px; }
+
+  /* Know before you go */
+  .know {
+    margin: 4px 22px 30px; padding: 22px; border-radius: 18px;
+    background: var(--paper-deep); border: 1px solid var(--line);
+  }
+  .know h2 { font-family: var(--display); font-size: 20px; font-weight: 600; margin-bottom: 14px; }
+  .know-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14.5px; }
+  .know-row:first-of-type { border-top: none; padding-top: 0; }
+  .know-row .k { color: var(--ink-soft); }
+  .know-row .v { text-align: right; font-weight: 500; }
+  .know .actions { display: flex; gap: 10px; margin-top: 18px; }
+  .btn-ghost-link {
+    flex: 1; font: 600 14.5px var(--sans); color: var(--ink);
+    background: var(--paper); border: 1px solid var(--line); border-radius: 999px;
+    padding: 0 14px; min-height: 46px; cursor: pointer; text-decoration: none;
+    display: grid; place-items: center;
+  }
+  .btn-ghost-link:hover { background: var(--chip); }
+  .btn-ghost-link:focus-visible { outline: 2px dashed var(--coral); outline-offset: 3px; }
+
+  /* Trust line */
+  .trust {
+    padding: 0 22px 34px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .trust-mark {
+    width: 34px; height: 34px; flex: none; border-radius: 50%;
+    background: var(--teal-soft); display: grid; place-items: center;
+    color: var(--teal); font-size: 15px; font-weight: 700;
+  }
+  .trust p { font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+
+  /* Sticky action bar */
+  .actionbar {
+    position: sticky; bottom: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 22px calc(12px + env(safe-area-inset-bottom));
+    background: rgba(246,240,228,0.94); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line);
+  }
+  .actionbar .sum { font-size: 14px; color: var(--ink-soft); line-height: 1.3; }
+  .actionbar .sum strong { display: block; color: var(--ink); font-size: 15px; }
+  .actionbar .btn { min-width: 150px; }
+  .actionbar .btn:disabled { background: #E8DFCE; color: #6E5E4E; border: 1px solid #D8CCB6; cursor: default; }
+
+  /* Success overlay */
+  .overlay {
+    position: fixed; inset: 0; z-index: 100; display: none;
+    place-items: center; padding: 24px;
+    background: rgba(56,41,29,0.35);
+  }
+  .overlay.open { display: grid; }
+  .overlay-card {
+    background: var(--paper); border-radius: 22px; max-width: 360px; width: 100%;
+    padding: 34px 26px 26px; text-align: center;
+    box-shadow: 0 24px 60px rgba(56,41,29,0.3);
+    animation: rise 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+  @keyframes rise { from { transform: translateY(18px) scale(0.97); opacity: 0; } to { transform: none; opacity: 1; } }
+  .overlay .ok {
+    width: 60px; height: 60px; margin: 0 auto 16px; border-radius: 50%;
+    background: var(--teal-soft); color: var(--teal); font-size: 26px; font-weight: 700;
+    display: grid; place-items: center;
+  }
+  .overlay h2 { font-family: var(--display); font-size: 23px; font-weight: 600; margin-bottom: 8px; }
+  .overlay p { color: var(--ink-soft); font-size: 15px; line-height: 1.5; margin-bottom: 20px; }
+  .overlay .btn { width: 100%; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .loader-line { animation: none; background: var(--chip); }
+    .overlay-card { animation: none; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="demo-tag">mockup for the owner</div>
+  <div class="frame">
+    <header class="brandbar">
+      <span class="brand">Sabores</span>
+      <span class="brand-loc">Farmers Market West</span>
+    </header>
+    <div class="banner" aria-hidden="true">
+      <span class="b1"></span><span class="b2"></span><span class="b3"></span>
+      <span class="b4"></span><span class="b5"></span><span class="b6"></span>
+    </div>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow">Today's shelf</p>
+        <h1>Made this morning, with love.</h1>
+        <p class="orient">We are Sabores, a little Mexican stall inside Calgary Farmers Market West. This is what is on our counter today. See it, hold it, and come pick it up before 4pm.</p>
+        <div class="meta-row">
+          <span class="chip" id="dateChip">Wed, Aug 19</span>
+          <span class="chip fresh" id="freshChip">Fresh today</span>
+        </div>
+        <div class="demo-switch" role="group" aria-label="Demo states">
+          <button id="stateOpen" class="active" type="button">Open day</button>
+          <button id="stateClosed" type="button">Closed day</button>
+          <button id="stateError" type="button">Error</button>
+        </div>
+      </section>
+
+      <div class="shelf-wrap">
+        <div class="loader" id="loader" aria-hidden="true">
+          <div class="loader-line"></div>
+          <div class="loader-line"></div>
+          <div class="loader-line"></div>
+        </div>
+
+        <section class="shelf" id="shelf" aria-label="What is on the shelf today">
+          <article class="item">
+            <div class="thumb"><div class="tresleches" style="width:100%;height:100%"></div><span class="photo-note">photo</span></div>
+            <div>
+              <h3>Tres leches</h3>
+              <p class="desc">Our pride. Made fresh this morning.</p>
+              <p class="price">$6.50 a slice</p>
+              <div class="tags"><span class="tag">Today: 2 pans</span></div>
+            </div>
+            <div class="actions"><button class="btn btn-ghost" data-hold="tresleches" type="button">Hold a slice</button></div>
+          </article>
+
+          <article class="item">
+            <div class="thumb"><div class="tamale" style="width:100%;height:100%"></div><span class="photo-note">photo</span></div>
+            <div>
+              <h3>Tamales</h3>
+              <p class="desc">Chicken, pork, cheese. Steamed fresh every morning.</p>
+              <p class="price">$4.50 each, $48 a dozen</p>
+              <div class="tags"><span class="tag low">Pork nearly gone</span></div>
+            </div>
+            <div class="actions"><button class="btn btn-ghost" data-hold="tamales" type="button">Hold a dozen</button></div>
+          </article>
+
+          <article class="item">
+            <div class="thumb"><div class="salsa-roja" style="width:100%;height:100%"></div><span class="photo-note">photo</span></div>
+            <div>
+              <h3>Salsa roja</h3>
+              <p class="desc">House-made, six of the eleven salsas out today.</p>
+              <p class="price">$9.00 a jar</p>
+              <div class="tags"><span class="tag">Made this week</span></div>
+            </div>
+            <div class="actions"><button class="btn btn-ghost" data-hold="salsa-roja" type="button">Hold a jar</button></div>
+          </article>
+
+          <article class="item">
+            <div class="thumb"><div class="salsa-verde" style="width:100%;height:100%"></div><span class="photo-note">photo</span></div>
+            <div>
+              <h3>Salsa verde</h3>
+              <p class="desc">Tomatillo, roasted poblano, lime.</p>
+              <p class="price">$9.00 a jar</p>
+              <div class="tags"><span class="tag">Made this week</span></div>
+            </div>
+            <div class="actions"><button class="btn btn-ghost" data-hold="salsa-verde" type="button">Hold a jar</button></div>
+          </article>
+
+          <article class="item">
+            <div class="thumb"><div class="habanero" style="width:100%;height:100%"></div><span class="photo-note">photo</span></div>
+            <div>
+              <h3>Salsa habanero</h3>
+              <p class="desc">The one everyone asks about.</p>
+              <p class="price">$9.00 a jar</p>
+            </div>
+            <div class="actions"><button class="btn btn-gone" type="button" disabled>Gone for today</button></div>
+          </article>
+
+          <article class="item">
+            <div class="thumb"><div class="champurrado" style="width:100%;height:100%"></div><span class="photo-note">photo</span></div>
+            <div>
+              <h3>Champurrado</h3>
+              <p class="desc">Warm, thick, masa and chocolate.</p>
+              <p class="price">$5.00 a cup</p>
+              <div class="tags"><span class="tag">Made this week</span></div>
+            </div>
+            <div class="actions"><button class="btn btn-ghost" data-hold="champurrado" type="button">Hold a cup</button></div>
+          </article>
+        </section>
+
+        <section class="closed" id="closedState" aria-label="Closed today">
+          <div class="closed-mark">Mon</div>
+          <h2>Closed today</h2>
+          <p>The shelf is back Wednesday at 9am.<br>Last week's first tres leches batch was gone by noon.</p>
+          <p class="tease">Back Wednesday</p>
+        </section>
+
+        <section class="error-state" id="errorState" aria-label="Shelf unreachable">
+          <div class="err-mark">!</div>
+          <h2>Couldn't reach the shelf</h2>
+          <p>Check your connection and try again.</p>
+          <button class="btn btn-primary" id="retryBtn" type="button">Try again</button>
+        </section>
+      </div>
+
+      <section class="know" aria-label="Know before you go">
+        <h2>Know before you go</h2>
+        <div class="know-row"><span class="k">Hours today</span><span class="v" id="hoursValue">9am to 7pm</span></div>
+        <div class="know-row"><span class="k">Stall</span><span class="v">Calgary Farmers Market West, 25 Greenbriar Dr NW</span></div>
+        <div class="know-row"><span class="k">Holds</span><span class="v">Held till 4pm, then back on the shelf</span></div>
+        <div class="actions">
+          <a class="btn-ghost-link" href="https://maps.google.com/?q=Calgary+Farmers+Market+West" target="_blank" rel="noopener">Directions</a>
+        </div>
+      </section>
+
+      <section class="trust" aria-label="Why you can trust the shelf">
+        <div class="trust-mark">i</div>
+        <p>The counter matches the phone. What you hold is here when you arrive, and what is gone is marked gone, because our word is part of what we serve.</p>
+      </section>
+    </main>
+
+    <footer class="actionbar">
+      <div class="sum" id="actionSum" aria-live="polite"><strong>Nothing held yet</strong>Pickup till 4pm</div>
+      <a class="btn btn-primary" id="callBtn" href="tel:8254889098">Call the stall</a>
+    </footer>
+  </div>
+
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="okTitle" tabindex="-1">
+    <div class="overlay-card">
+      <div class="ok">&#10003;</div>
+      <h2 id="okTitle">Held for you</h2>
+      <p id="okBody">Your tres leches is on the shelf till 4pm. If plans change, it just goes back on the shelf. No pressure.</p>
+      <button class="btn btn-primary" id="overlayClose" type="button">Done</button>
+    </div>
+  </div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var loader = document.getElementById('loader');
+    var shelf = document.getElementById('shelf');
+    var closed = document.getElementById('closedState');
+    var errorState = document.getElementById('errorState');
+    var dateChip = document.getElementById('dateChip');
+    var freshChip = document.getElementById('freshChip');
+    var hoursValue = document.getElementById('hoursValue');
+    var actionSum = document.getElementById('actionSum');
+    var callBtn = document.getElementById('callBtn');
+    var overlay = document.getElementById('overlay');
+    var overlayCard = overlay.querySelector('.overlay-card');
+    var overlayClose = document.getElementById('overlayClose');
+    var lastFocus = null;
+    var held = {};
+    var labels = {
+      tresleches: 'tres leches', tamales: 'a dozen tamales', 'salsa-roja': 'a jar of salsa roja',
+      'salsa-verde': 'a jar of salsa verde', champurrado: 'a cup of champurrado'
+    };
+    var holdBtns = {};
+
+    function renderState(which) {
+      loader.style.display = 'none';
+      shelf.style.display = 'none';
+      closed.style.display = 'none';
+      errorState.style.display = 'none';
+      if (which === 'open') {
+        shelf.style.display = 'block';
+        dateChip.textContent = 'Wed, Aug 19';
+        freshChip.style.display = 'inline-flex';
+        hoursValue.textContent = '9am to 7pm';
+      } else if (which === 'closed') {
+        closed.style.display = 'block';
+        dateChip.textContent = 'Mon, Aug 17';
+        freshChip.style.display = 'none';
+        hoursValue.textContent = 'Closed today';
+      } else {
+        errorState.style.display = 'block';
+        dateChip.textContent = 'Wed, Aug 19';
+        freshChip.style.display = 'inline-flex';
+        hoursValue.textContent = '9am to 7pm';
+      }
+      updateBar();
+    }
+
+    function updateBar() {
+      var count = Object.keys(held).length;
+      var names = Object.keys(held).map(function (k) { return labels[k]; });
+      if (document.getElementById('stateClosed').classList.contains('active')) {
+        actionSum.innerHTML = '<strong>Closed today</strong>Back Wednesday 9am';
+        callBtn.textContent = 'Closed today';
+        callBtn.setAttribute('aria-disabled', 'true');
+      } else if (document.getElementById('stateError').classList.contains('active')) {
+        actionSum.innerHTML = '<strong>Shelf unreachable</strong>Try again in a bit';
+        callBtn.textContent = 'Call the stall';
+        callBtn.removeAttribute('aria-disabled');
+      } else if (count === 0) {
+        actionSum.innerHTML = '<strong>Nothing held yet</strong>Pickup till 4pm';
+        callBtn.textContent = 'Call the stall';
+        callBtn.removeAttribute('aria-disabled');
+      } else {
+        actionSum.innerHTML = '<strong>' + count + ' item' + (count > 1 ? 's' : '') + ' held</strong>' + names.join(', ') + ' till 4pm';
+        callBtn.textContent = 'Call the stall';
+        callBtn.removeAttribute('aria-disabled');
+      }
+    }
+
+    document.querySelectorAll('[data-hold]').forEach(function (btn) {
+      var key = btn.getAttribute('data-hold');
+      holdBtns[key] = btn;
+      btn.addEventListener('click', function () {
+        if (held[key]) {
+          delete held[key];
+          btn.textContent = btn.getAttribute('data-label');
+          btn.classList.remove('btn-held');
+          btn.classList.add('btn-ghost');
+          btn.disabled = false;
+        } else {
+          held[key] = true;
+          if (!btn.getAttribute('data-label')) { btn.setAttribute('data-label', btn.textContent); }
+          btn.textContent = 'Held';
+          btn.classList.remove('btn-ghost');
+          btn.classList.add('btn-held');
+          btn.disabled = false;
+        }
+        updateBar();
+      });
+    });
+
+    callBtn.addEventListener('click', function (e) {
+      if (document.getElementById('stateClosed').classList.contains('active')) {
+        e.preventDefault();
+        return;
+      }
+      if (Object.keys(held).length > 0) {
+        e.preventDefault();
+        var names = Object.keys(held).map(function (k) { return labels[k]; });
+        document.getElementById('okBody').textContent =
+          'Your ' + names.join(', ') + (names.length > 1 ? ' are' : ' is') + ' on the shelf till 4pm. If plans change, it just goes back on the shelf. No pressure.';
+        lastFocus = callBtn;
+        overlay.classList.add('open');
+        overlay.focus();
+      }
+    });
+
+    overlayClose.addEventListener('click', function () {
+      overlay.classList.remove('open');
+      if (lastFocus) { lastFocus.focus(); }
+    });
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) {
+        overlay.classList.remove('open');
+        if (lastFocus) { lastFocus.focus(); }
+      }
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && overlay.classList.contains('open')) {
+        overlay.classList.remove('open');
+        if (lastFocus) { lastFocus.focus(); }
+      }
+      if (e.key === 'Tab' && overlay.classList.contains('open')) {
+        var focusables = overlay.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])');
+        var first = focusables[0];
+        var last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    });
+
+    document.getElementById('stateOpen').addEventListener('click', function () {
+      document.getElementById('stateOpen').classList.add('active');
+      document.getElementById('stateClosed').classList.remove('active');
+      document.getElementById('stateError').classList.remove('active');
+      renderState('open');
+    });
+    document.getElementById('stateClosed').addEventListener('click', function () {
+      document.getElementById('stateClosed').classList.add('active');
+      document.getElementById('stateOpen').classList.remove('active');
+      document.getElementById('stateError').classList.remove('active');
+      renderState('closed');
+    });
+    document.getElementById('stateError').addEventListener('click', function () {
+      document.getElementById('stateError').classList.add('active');
+      document.getElementById('stateOpen').classList.remove('active');
+      document.getElementById('stateClosed').classList.remove('active');
+      renderState('error');
+    });
+    document.getElementById('retryBtn').addEventListener('click', function () {
+      document.getElementById('stateOpen').classList.add('active');
+      document.getElementById('stateError').classList.remove('active');
+      document.getElementById('stateClosed').classList.remove('active');
+      renderState('open');
+    });
+
+    if (reduce) { renderState('open'); }
+    else {
+      setTimeout(function () { renderState('open'); }, 700);
+    }
+  })();
+</script>
+</body>
+</html>
